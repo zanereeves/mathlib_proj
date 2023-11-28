@@ -434,3 +434,75 @@ lemma inv_eq_of_dia [Group₃ G] {a b : G} (h : a ◇ b = 𝟙) : a⁻¹ = b :=
 
 lemma dia_inv [Group₃ G] (a : G) : a ◇ a⁻¹ = 𝟙 := by
   rw [<- inv_dia a⁻¹, inv_eq_of_dia (inv_dia a)]
+
+
+-- Classes and Structures are defined in both additive and multiplicative notation
+-- with an attr. to_additive
+class AddSemigroup₃ (α : Type) extends Add α where
+  add_assoc₃ : ∀ a b c : α, a + b + c = a + (b + c)
+
+@[to_additive AddSemigroup₃]
+class Semigroup₃ (α : Type) extends Mul α where
+  mul_assoc₃ : ∀ a b c : α, a * b * c = a * (b * c)
+
+class AddMonoid₃ (α : Type) extends AddSemigroup₃ α, AddZeroClass α
+
+@[to_additive AddMonoid₃]
+class Monoid₃ (α : Type) extends Semigroup₃ α, MulOneClass α
+
+attribute [to_additive existing] Monoid₃.toMulOneClass
+
+export Semigroup₃ (mul_assoc₃)
+export AddSemigroup₃ (add_assoc₃)
+
+@[to_additive]
+lemma left_inv_eq_right_inv' {M : Type} [Monoid₃ M] {a b c : M} (hba : b * a = 1) (hac : a * c = 1) : b = c := by
+  rw [← one_mul c, ← hba, mul_assoc₃, hac, mul_one b]
+
+#check left_neg_eq_right_neg'
+
+
+class AddCommSemigroup₃ (α : Type) extends AddSemigroup₃ α where
+  add_comm : ∀ a b : α, a + b = b + a
+
+@[to_additive AddCommSemigroup₃]
+class CommSemigroup₃ (α : Type) extends Semigroup₃ α where
+  mul_comm : ∀ a b : α, a * b = b * a
+
+class AddCommMonoid₃ (α : Type) extends AddMonoid₃ α, AddCommSemigroup₃ α
+
+@[to_additive AddCommMonoid₃]
+class CommMonoid₃ (α : Type) extends Monoid₃ α, CommSemigroup₃ α
+
+class AddGroup₄ (G : Type) extends AddMonoid₃ G, Neg G where
+  neg_add : ∀ a : G, -a + a = 0
+
+@[to_additive AddGroup₄]
+class Group₄ (G : Type) extends Monoid₃ G, Inv G where
+  inv_mul : ∀ a : G, a⁻¹ * a = 1
+
+attribute [simp] Group₄.inv_mul AddGroup₄.neg_add
+
+-- exercises
+-- Note, Groups are Monoids with inverse elements
+-- Semigroups are groups with associativity
+
+@[to_additive]
+lemma inv_eq_of_mul [Group₄ G] {a b : G} (h : a * b = 1) : a⁻¹ = b :=
+  left_inv_eq_right_inv' (Group₄.inv_mul a) h
+
+
+@[to_additive (attr := simp)]
+lemma Group₄.mul_inv {G : Type} [Group₄ G] {a : G} : a * a⁻¹ = 1 := by
+  rw [← inv_mul a⁻¹, inv_eq_of_mul (inv_mul a)]
+
+@[to_additive]
+lemma mul_left_cancel₃ {G : Type} [Group₄ G] {a b c : G} (h : a * b = a * c) : b = c := by
+  simpa [← mul_assoc₃] using congr_arg (a⁻¹ * ·) h
+
+-- apply associativity of our group then try to simplify after apply a congr_argument where
+-- we substitute h in for ·
+
+@[to_additive]
+lemma mul_right_cancel₃ {G : Type} [Group₄ G] {a b c : G} (h : b*a = c*a) : b = c := by
+  simpa [mul_assoc₃] using congr_arg (· * a⁻¹) h
